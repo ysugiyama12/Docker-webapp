@@ -1,13 +1,15 @@
 package main
 
 import(
-	"log"
+	// "log"
 	"net/http"
 	// "path/filepath"
 	"sync"
 	"text/template"
-	// "fmt"
+	"fmt"
 	"encoding/json"
+	"strconv"
+	"os"
 )
 
 type templateHandler struct {
@@ -39,8 +41,8 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.Handle("/", &templateHandler{})
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.Fatal("ListenAndServe", err)
-	}
+    port, _ := strconv.Atoi(os.Args[1])
+    fmt.Printf("Starting server at Port %d", port)
+    http.Handle("/", &templateHandler{})
+    http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
