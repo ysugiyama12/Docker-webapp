@@ -4,3 +4,5 @@ FROM golang:1.9
 WORKDIR /go/src/denki/go
 # ホストOSの ./go の中身を作業ディレクトリに追加
 ADD ./go .
+
+RUN go get github.com/lib/pq
