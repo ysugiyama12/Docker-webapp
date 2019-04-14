@@ -11,6 +11,7 @@ import(
 	_ "github.com/lib/pq"
 	"database/sql"
 	"strings"
+	"os"
 )
 
 type templateHandler struct {
@@ -128,8 +129,14 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	port := os.Getenv("PORT")
+	fmt.Println(os.Environ())
+	if port == "" {
+		log.Fatal("$POST must be set")
+	}
+
 	http.Handle("/", &templateHandler{})
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
 		log.Fatal("ListenAndServe", err)
 	}
 }
