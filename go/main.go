@@ -24,15 +24,9 @@ type Ping struct {
 }
 
 type User struct {
-    Id   int
-	Name string
-	Email string
-}
-
-type User2 struct {
-    Id   int
-	Name string
-	Email string
+    Id   int `json:"id"`
+	Name string `json:"name"`
+	Email string `json:"email"`
 }
 
 type post_res struct {
@@ -121,7 +115,15 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		defer stmt.Close()
 		var tt User
 		err = stmt.QueryRow(t.Name, t.Email).Scan(&tt.Id)
-		fmt.Println(tt.Id)
+		tt.Name = t.Name
+		tt.Email = t.Email
+		res, err := json.Marshal(tt)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Write(res)
+		return
 	}
 }
 
