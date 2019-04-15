@@ -12,6 +12,7 @@ import(
 	"database/sql"
 	"strings"
 	"os"
+	"strconv"
 )
 
 type templateHandler struct {
@@ -38,7 +39,8 @@ type post_res struct {
 
 func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var Db *sql.DB
-    Db, err := sql.Open("postgres", "host=db-sugiyama user=root password=root dbname=app_db sslmode=disable")
+	// Db, err := sql.Open("postgres", "host=db-sugiyama user=root password=root dbname=app_db sslmode=require")
+	Db, err := sql.Open("postgres", fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=require", os.Getenv("DB_HOST"), os.Getenv("DB_USER"),os.Getenv("DB_PASSWORD"),os.Getenv("DB_NAME")))
     if err != nil {
         log.Fatal(err)
 	}
@@ -129,14 +131,14 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	port := os.Getenv("PORT")
-	fmt.Println(os.Environ())
-	if port == "" {
-		log.Fatal("$POST must be set")
-	}
+	// port := os.Getenv("PORT")
+	port, _ := strconv.Atoi(os.Args[1])
+	// if port == "" {
+	// 	log.Fatal("$POST must be set")
+	// }
 
 	http.Handle("/", &templateHandler{})
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
 		log.Fatal("ListenAndServe", err)
 	}
 }
