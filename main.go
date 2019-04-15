@@ -1,15 +1,18 @@
 package main
 
 import(
-	// "log"
+	"log"
 	"net/http"
 	// "path/filepath"
 	"sync"
 	"text/template"
 	"fmt"
 	"encoding/json"
-	"strconv"
+	_ "github.com/lib/pq"
+	"database/sql"
+	"strings"
 	"os"
+	"strconv"
 )
 
 type templateHandler struct {
@@ -22,10 +25,102 @@ type Ping struct {
     Message string	`json:"message"`
 }
 
+type User struct {
+    Id   int `json:"id"`
+	Name string `json:"name"`
+	Email string `json:"email"`
+}
+
+type post_res struct {
+	Name string
+	Email string
+}
+
+
 func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var Db *sql.DB
+	// Db, err := sql.Open("postgres", "host=db-sugiyama user=root password=root dbname=app_db sslmode=require")
+	Db, err := sql.Open("postgres", fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=require", os.Getenv("DB_HOST"), os.Getenv("DB_USER"),os.Getenv("DB_PASSWORD"),os.Getenv("DB_NAME")))
+    if err != nil {
+        log.Fatal(err)
+	}
+	fmt.Println(r.URL)
+	url := r.URL.String()
 	if r.Method == "GET" {
-		ping := Ping{"Hello, World!!"}
-		res, err := json.Marshal(ping)
+		slice := strings.Split(url, "/")
+		if url == "/" {
+			ping := Ping{"Hello, World!!"}
+			res, err := json.Marshal(ping)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Write(res)
+	
+		}else if len(slice) == 2 || (len(slice) == 3 && slice[2] == ""){
+			if slice[1] == "users" {
+				rows, err := Db.Query("select id, name, email from my_user")
+				if err != nil {
+					log.Fatal(err)
+				}
+				var es []User
+				for rows.Next() {
+					var e User
+					rows.Scan(&e.Id, &e.Name, &e.Email)
+					es = append(es, e)
+				}
+				fmt.Printf("%v", es)
+				res, err := json.Marshal(es)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Write(res)
+				return
+			}
+		}else if len(slice) == 3 {
+			if slice[1] == "users" {
+				rows, err := Db.Query("select id, name, email from my_user where id = " + slice[2])
+				if err != nil {
+					log.Fatal(err)
+				}
+				var es []User
+				for rows.Next() {
+					var e User
+					rows.Scan(&e.Id, &e.Name, &e.Email)
+					es = append(es, e)
+				}
+				fmt.Printf("%v", es)
+				res, err := json.Marshal(es[0])
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Write(res)
+				return
+			}
+
+		}
+
+	}else if r.Method == "POST" {
+		decoder := json.NewDecoder(r.Body)
+		var t post_res
+		err := decoder.Decode(&t)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(t.Name)
+		query := "insert into my_user (name, email) values ($1,$2) returning id"
+		stmt, err := Db.Prepare(query)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer stmt.Close()
+		var tt User
+		err = stmt.QueryRow(t.Name, t.Email).Scan(&tt.Id)
+		tt.Name = t.Name
+		tt.Email = t.Email
+		res, err := json.Marshal(tt)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -33,16 +128,17 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Write(res)
 		return
 	}
-	
-	// t.once.Do(func() {
-	// 	t.templ = template.Must(template.ParseFiles(filepath.Join("templates", t.filename)))
-	// })
-	// t.templ.Execute(w, nil)
 }
 
 func main() {
-    port, _ := strconv.Atoi(os.Args[1])
-    fmt.Printf("Starting server at Port %d", port)
-    http.Handle("/", &templateHandler{})
-    http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	// port := os.Getenv("PORT")
+	port, _ := strconv.Atoi(os.Args[1])
+	// if port == "" {
+	// 	log.Fatal("$POST must be set")
+	// }
+
+	http.Handle("/", &templateHandler{})
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+		log.Fatal("ListenAndServe", err)
+	}
 }
