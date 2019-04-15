@@ -26,3 +26,55 @@ root/
 $ docker-compose build
 $ docker-compose up -d
 ```
+その後，以下のURLにアクセスします．
+http://localhost:8080/
+
+## 想定しているリクエストおよびその結果
+### Hello, worldの表示
+リクエスト  
+```
+$ curl -XGET -H 'Content-Type:application/json' http://localhost:8080/
+```
+レスポンス(json)
+```
+{"message":"Hello, World!!"}
+```
+
+### DBに登録されているユーザ一覧を取得
+リクエスト  
+```
+$ curl -XGET -H 'Content-Type:application/json' http://localhost:8080/users
+```
+レスポンス(json)
+```
+[{"id":1,"name":"sugiyama","email":"fuga.com"},{"id":2,"name":"tanaka","email":"hoge.com"}]
+```
+
+### DBに登録されているユーザ情報をIDで指定
+リクエスト  
+```
+$ curl -XGET -H 'Content-Type:application/json' http://localhost:8080/users/1
+```
+レスポンス(json)
+```
+{"id":1,"name":"sugiyama","email":"fuga.com"}]
+```
+
+### DBに新しいユーザを登録
+リクエスト  
+```
+$ curl -XPOST -H 'Content-Type:application/json' http://localhost:8080/users -d '{"name": "test", "email": "hoge@example.com" }'
+```
+レスポンス(json)
+```
+{"id":3,"name":"test","email":"hoge@example.com"}
+```
+このあと/usersにアクセスすると追加されていることがわかる．
+```
+[{"id":1,"name":"sugiyama","email":"fuga.com"},{"id":2,"name":"tanaka","email":"hoge.com"},{"id":3,"name":"test","email":"hoge@example.com"}]
+```
+(値の更新および削除は時間がなかったため省略しました)  
+
+## Herokuへのデプロイ
+今回はDockerを簡単にデプロイすることのできるPaaSとしてHerokuを選択した．  
+以下にデプロイまでの手順を示す． 
