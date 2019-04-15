@@ -39,12 +39,10 @@ type post_res struct {
 
 func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var Db *sql.DB
-	// Db, err := sql.Open("postgres", "host=db-sugiyama user=root password=root dbname=app_db sslmode=require")
-	Db, err := sql.Open("postgres", fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=require", os.Getenv("DB_HOST"), os.Getenv("DB_USER"),os.Getenv("DB_PASSWORD"),os.Getenv("DB_NAME")))
+	Db, err := sql.Open("postgres", fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", os.Getenv("DB_HOST"), os.Getenv("DB_USER"),os.Getenv("DB_PASSWORD"),os.Getenv("DB_NAME")))
     if err != nil {
         log.Fatal(err)
 	}
-	fmt.Println(r.URL)
 	url := r.URL.String()
 	if r.Method == "GET" {
 		slice := strings.Split(url, "/")
@@ -69,7 +67,6 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					rows.Scan(&e.Id, &e.Name, &e.Email)
 					es = append(es, e)
 				}
-				fmt.Printf("%v", es)
 				res, err := json.Marshal(es)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -90,7 +87,6 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					rows.Scan(&e.Id, &e.Name, &e.Email)
 					es = append(es, e)
 				}
-				fmt.Printf("%v", es)
 				res, err := json.Marshal(es[0])
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -109,7 +105,6 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(t.Name)
 		query := "insert into my_user (name, email) values ($1,$2) returning id"
 		stmt, err := Db.Prepare(query)
 		if err != nil {
